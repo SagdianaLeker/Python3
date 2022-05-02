@@ -1,6 +1,9 @@
 import random
 import sys
 import pygame
+import snake_table as sn
+
+import pygame
 pygame.init()
 #screen information
 screen = pygame.display.set_mode((500, 500))
@@ -8,7 +11,7 @@ screen = pygame.display.set_mode((500, 500))
 RED = (238,44,44)
 YELLOW = (255,215,0)
 score_font = pygame.font.SysFont("comicsansms", 17)
-score_font = pygame.font.SysFont("comicsansms", 17)
+pausef = pygame.font.SysFont("comicsansms", 50)
 colors = (RED,RED,YELLOW,RED)
 #score
 def Your_score(score, levelnum):
@@ -21,6 +24,43 @@ def load_wall(level):
     with open(f'levels/level{level}.txt', 'r') as f:
         global wall_body
         wall_body = f.readlines()
+        
+def pause():
+    paused = True
+    while paused:
+        if sn.score < snake.score:
+            sn.sql = f"""
+                    update snake
+                    set score = '{snake.score}'
+                    where username = '{sn.user}';
+                    """
+            sn.cursor.execute(sn.sql)
+        if sn.level < wall.level:
+            sn.sql = f"""
+                    update snake
+                    set level = '{wall.level}'
+                    where username = '{sn.user}';
+                    """
+            sn.cursor.execute(sn.sql)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_c:
+                    paused = False
+        
+                elif event.key == pygame.K_q:
+                    pygame.quit()
+        screen.fill((255,255,255))
+        value = pausef.render("PAUSED", True, (200,193,137) )
+        screen.blit(value, [150,170])
+        value = score_font.render("Click C to continue, click Q to quit", True, (200,193,137) )
+        screen.blit(value, [120,250])
+        Your_score(snake.score, wall.level)
+        pygame.display.update()
+        clock.tick(5)
 
 class Wall:
      #appending coordinates of # from files
@@ -43,7 +83,7 @@ class Wall:
      #drawing walls
   def draw(self):
     for x, y in self.body:
-      pygame.draw.rect(screen, (0,0,0), (x * 20, y * 20, 20, 20))
+      pygame.draw.rect(screen, (230,85,175), (x * 20, y * 20, 20, 20))
 
 
 class Snake:
@@ -97,6 +137,20 @@ class Snake:
                 self.game_over()
  #quit if game over
     def game_over(self):
+        if sn.score < snake.score:
+            sn.sql = f"""
+                    update snake
+                    set score = '{snake.score}'
+                    where username = '{sn.user}';
+                    """
+            sn.cursor.execute(sn.sql)
+        if sn.level < wall.level:
+            sn.sql = f"""
+                    update snake
+                    set level = '{wall.level}'
+                    where username = '{sn.user}';
+                    """
+            sn.cursor.execute(sn.sql)
         pygame.quit()
         sys.exit()
 class Food:
@@ -147,6 +201,8 @@ while running:
             if event.key == pygame.K_DOWN and snake.dy != -d:
                 snake.dx = 0
                 snake.dy = d  
+            if event.key == pygame.K_p:
+                pause()
     if snake.eat(food.x, food.y):
         #getting longer length by eating food, if snake collides with food then food goes to another place
         snake.is_add = True
@@ -185,4 +241,5 @@ while running:
 
     pygame.display.flip()
 
+sn.cursor.close()
 pygame.quit()
